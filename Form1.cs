@@ -67,7 +67,7 @@ namespace AsyncChart
                 SeriesEx s = new SeriesEx(i.ToString());
                 s.WrappedSeries.ChartType = SeriesChartType.Line;
                 chartEx.Series.Add(s);
-                s.Points.DataBind(pts[i]);
+                s.Points.AddRange(pts[i]);
                 
             }
             Console.WriteLine("Points added.");

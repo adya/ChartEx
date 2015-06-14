@@ -12,10 +12,19 @@ using System.Windows.Forms.DataVisualization.Charting;
 namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
 {
     
+    /// <summary>
+    /// ChartEx and underlying classes designed as wrappers to the original chart in order to be able to preview points which will be added.
+    /// Note: This could be done easier if Microsoft allows overriding of their methods.
+    /// </summary>
 
+
+    ///WARNING: You must Add series BEFORE Adding points into that series. Otherwise Points can't be observed by ChartEx.
 
     class ChartEx
     {
+        /// <summary>
+        /// Gets the underlying original Chart object
+        /// </summary>
         public Chart WrappedChart { get; private set; }
 
         public ChartEx(Chart chart){
@@ -29,7 +38,8 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
         private void PointsWillBeAdded(Series destSeries, int index, List<PointF> pointsToAdd)
         {
             Console.WriteLine("Here we goes to interrupt adding");
-           // destSeries.Points.DataBindXY(pointsToAdd, "X", pointsToAdd, "Y");
+            ///TODO: Continue filtering.
+            destSeries.Points.DataBindXY(pointsToAdd, "X", pointsToAdd, "Y");
         }
 
 
@@ -56,6 +66,15 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             collection.Add(series.WrappedSeries);
             series.PointsWillBeAdded += PointsWillBeAddedHandler;
         }
+
+        public SeriesEx this[int i]
+        {
+            get
+            {
+                return new SeriesEx(collection[i]);
+            }
+        }
+
         public delegate void PointsWillBeAddedEvent(Series destSeries, int index, List<PointF> pointsToAdd);
         public event PointsWillBeAddedEvent PointsWillBeAdded;
         private void OnPointsWillBeAdded(Series destSeries, List<PointF> pointsToAdd)
@@ -121,21 +140,21 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
 
         #region Overriden methods to add data
      
-        public void AddXY(float xValue, float yValue)
+        public void Add(float xValue, float yValue)
         {
             tmpPoints.Clear();
             tmpPoints.Add(new PointF(xValue, yValue));
             OnPointsWillBeAdded(tmpPoints);
         }
 
-        public void AddXY(PointF point)
+        public void Add(PointF point)
         {
             tmpPoints.Clear();
             tmpPoints.Add(point);
             OnPointsWillBeAdded(tmpPoints);
         }
 
-        public void DataBind(IEnumerable<PointF> dataSource)
+        public void AddRange(IEnumerable<PointF> dataSource)
         {
             tmpPoints.Clear();
             tmpPoints.AddRange(dataSource);
