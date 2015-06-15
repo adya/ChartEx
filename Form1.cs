@@ -16,6 +16,7 @@ namespace AsyncChart
     {
         private static Random rnd = new Random(Environment.TickCount);
         private int pointsAmount = 1000;
+        private int pointsRange = 5000;
         private IPointsFunc[] pointsFuncs = new IPointsFunc[] { new PointsFuncDigital(2), new PointsFuncRandom(2), new PointsFuncSin() };
         public enum Funcs { SIN, DIGITAL, RANDOM, MIXED}
         private Funcs funcs;
@@ -26,11 +27,17 @@ namespace AsyncChart
         public Form1()
         {
             InitializeComponent();
+            chartEx = new ChartEx(chart1);
+            rbFuncSin.Checked = true;
+
             nudPoints.Value = pointsAmount;
             nudInterval.Value = timer1.Interval;
+            nudValuesRange.Value = pointsRange;
+            nudMaxPoints.Value = chartEx.MaxRenderedPoints;
+            cbApproximate.Checked = chartEx.ApproximationEnabled;
             timer1.Start();
-            rbFuncSin.Checked = true;
-            chartEx = new ChartEx(chart1);
+            
+            
         }
 
         private IPointsFunc GetFunc(int i)
@@ -53,22 +60,32 @@ namespace AsyncChart
         private void timer1_Tick(object sender, EventArgs e)
         {
             Console.WriteLine("Tick!");
-            PointF[][] pts = new PointF[12][];
             time += timer1.Interval;
+            Generate();
+        }
+
+        private void Generate()
+        {
+            PointF[][] pts = new PointF[12][];
             for (int i = 0; i < 12; i++)
             {
-                
-                pts[i] = GetFunc(i).CreatePoints(pointsAmount, 0, i*5, time);
+                pts[i] = GetFunc(i).CreatePoints(pointsAmount, pointsRange, 0, i * 5, time);
             }
 
-            chart1.Series.Clear();
+            chartEx.Series.Clear();
+            //chart1.Series.Clear();
             for (int i = 0; i < 12; i++)
             {
                 SeriesEx s = new SeriesEx(i.ToString());
                 s.WrappedSeries.ChartType = SeriesChartType.Line;
                 chartEx.Series.Add(s);
                 s.Points.AddRange(pts[i]);
-                
+
+                //Series s = new Series(i.ToString());
+                //s.ChartType = SeriesChartType.Line;
+                //chart1.Series.Add(s);
+                //s.Points.DataBindXY(pts[i], "X", pts[i], "Y");
+
             }
             Console.WriteLine("Points added.");
         }
@@ -82,6 +99,7 @@ namespace AsyncChart
         private void nudPoints_ValueChanged(object sender, EventArgs e)
         {
             pointsAmount = (int)nudPoints.Value;
+            Generate();
         }
 
         private void nudInterval_ValueChanged(object sender, EventArgs e)
@@ -108,6 +126,30 @@ namespace AsyncChart
         {
             chart1.ChartAreas[0].AxisX.ScaleView.ZoomReset(1);
             chart1.ChartAreas[0].AxisY.ScaleView.ZoomReset(1);
+        }
+
+        private void nudValuesRange_ValueChanged(object sender, EventArgs e)
+        {
+            pointsRange = (int)nudValuesRange.Value;
+            Generate();
+        }
+
+        private void cbApproximate_CheckedChanged(object sender, EventArgs e)
+        {
+            chartEx.ApproximationEnabled = cbApproximate.Checked;
+        }
+
+        private void nudMaxPoints_ValueChanged(object sender, EventArgs e)
+        {
+            chartEx.MaxRenderedPoints = (int)nudMaxPoints.Value;
+        }
+
+        private void bTimer_Click(object sender, EventArgs e)
+        {
+            if (timer1.Enabled)
+                timer1.Stop();
+            else
+                timer1.Start();
         }
     }
 }
