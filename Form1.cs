@@ -15,8 +15,10 @@ namespace AsyncChart
     public partial class Form1 : Form
     {
         private static Random rnd = new Random(Environment.TickCount);
-        private int pointsAmount = 1000;
-        private int pointsRange = 5000;
+        private int pointsAmount = 5000;
+        private int pointsRange = 1000;
+        private int seriesAmount = 12;
+        private bool[] enabledSeries;
         private IPointsFunc[] pointsFuncs = new IPointsFunc[] { new PointsFuncDigital(2), new PointsFuncRandom(2), new PointsFuncSin() };
         public enum Funcs { SIN, DIGITAL, RANDOM, MIXED}
         private Funcs funcs;
@@ -29,15 +31,20 @@ namespace AsyncChart
             InitializeComponent();
             chartEx = new ChartEx(chart1);
             rbFuncSin.Checked = true;
-
+            CreateEnabledSeries();
+            Generate();
+            UpdateCheckList();
             nudPoints.Value = pointsAmount;
             nudInterval.Value = timer1.Interval;
             nudValuesRange.Value = pointsRange;
             nudMaxPoints.Value = chartEx.MaxRenderedPoints;
+            nudSeries.Value = seriesAmount;
+
             cbApproximate.Checked = chartEx.ApproximationEnabled;
-            timer1.Start();
-            
-            
+            cbDash.Checked = chartEx.UseDashLines;
+           // timer1.Start();
+            bTimer.Text = (timer1.Enabled ? "Stop" : "Start");
+            bTimer.BackColor = (timer1.Enabled ? Color.IndianRed : Color.LimeGreen);
         }
 
         private IPointsFunc GetFunc(int i)
@@ -59,7 +66,6 @@ namespace AsyncChart
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            Console.WriteLine("Tick!");
             time += timer1.Interval;
             Generate();
         }
@@ -67,29 +73,51 @@ namespace AsyncChart
         private void Generate()
         {
             PointF[][] pts = new PointF[12][];
-            for (int i = 0; i < 12; i++)
-            {
-                pts[i] = GetFunc(i).CreatePoints(pointsAmount, pointsRange, 0, i * 5, time);
-            }
-
             chartEx.Series.Clear();
-            //chart1.Series.Clear();
-            for (int i = 0; i < 12; i++)
+            for (int i = 0; i < seriesAmount; i++)
             {
                 SeriesEx s = new SeriesEx(i.ToString());
                 s.WrappedSeries.ChartType = SeriesChartType.Line;
                 chartEx.Series.Add(s);
-                s.Points.AddRange(pts[i]);
-
-                //Series s = new Series(i.ToString());
-                //s.ChartType = SeriesChartType.Line;
-                //chart1.Series.Add(s);
-                //s.Points.DataBindXY(pts[i], "X", pts[i], "Y");
-
+                s.WrappedSeries.Enabled = enabledSeries[i];
+                if (enabledSeries[i]){
+                    pts[i] = GetFunc(i).CreatePoints(pointsAmount, pointsRange, 0, (i+1) * 10, time);
+                    s.Points.AddRange(pts[i]);
+                }
             }
-            Console.WriteLine("Points added.");
         }
 
+        private void CreateEnabledSeries()
+        {
+
+            if (enabledSeries != null && enabledSeries.Length != seriesAmount)
+            {
+                bool[] tmp = new bool[seriesAmount];
+                int length = Math.Min(enabledSeries.Length, seriesAmount);
+                for (int i = 0; i < length; i++)
+                {
+                    tmp[i] = enabledSeries[i];
+                }
+                enabledSeries = tmp;
+            }
+            else
+            {
+                enabledSeries = new bool[seriesAmount];
+                for (int i = 0; i < seriesAmount; i++)
+                {
+                    enabledSeries[i] = true;
+                }
+            }
+        }
+
+        private void UpdateCheckList()
+        {
+            clbSeries.Items.Clear();
+            for (int i = 0; i < seriesAmount; i++)
+            {
+                clbSeries.Items.Add("Series " + i.ToString(), enabledSeries[i]);
+            }
+        }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
         {
@@ -122,12 +150,6 @@ namespace AsyncChart
             }
         }
 
-        private void chart1_DoubleClick(object sender, EventArgs e)
-        {
-            chart1.ChartAreas[0].AxisX.ScaleView.ZoomReset(1);
-            chart1.ChartAreas[0].AxisY.ScaleView.ZoomReset(1);
-        }
-
         private void nudValuesRange_ValueChanged(object sender, EventArgs e)
         {
             pointsRange = (int)nudValuesRange.Value;
@@ -139,6 +161,11 @@ namespace AsyncChart
             chartEx.ApproximationEnabled = cbApproximate.Checked;
         }
 
+        private void cbDash_CheckedChanged(object sender, EventArgs e)
+        {
+            chartEx.UseDashLines = cbDash.Checked;
+        }
+
         private void nudMaxPoints_ValueChanged(object sender, EventArgs e)
         {
             chartEx.MaxRenderedPoints = (int)nudMaxPoints.Value;
@@ -146,10 +173,30 @@ namespace AsyncChart
 
         private void bTimer_Click(object sender, EventArgs e)
         {
+            
             if (timer1.Enabled)
                 timer1.Stop();
             else
                 timer1.Start();
+            bTimer.Text = (timer1.Enabled ? "Stop" : "Start");
+            bTimer.BackColor = (timer1.Enabled ? Color.IndianRed : Color.LimeGreen);
         }
+
+        private void clbSeries_ItemCheck(object sender, ItemCheckEventArgs e)
+        {
+            enabledSeries[e.Index] = (e.NewValue == CheckState.Checked);
+            chartEx.Series[e.Index].WrappedSeries.Enabled = enabledSeries[e.Index]; 
+
+        }
+
+        private void nudSeries_ValueChanged(object sender, EventArgs e)
+        {
+            seriesAmount = (int)nudSeries.Value;
+            CreateEnabledSeries();
+            Generate();
+            UpdateCheckList();
+        }
+
+        
     }
 }

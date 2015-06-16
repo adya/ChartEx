@@ -20,76 +20,173 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
 
     ///WARNING: You must Add series BEFORE Adding points into that series. Otherwise Points can't be observed by ChartEx.
 
-    delegate void PointsWillBeAddedEvent(SeriesEx series, List<PointF> storedPoints, List<PointF> pointsToAdd);
+    delegate void PointsAddedEvent(SeriesEx series);
 
     class ChartEx
     {
         /// <summary>
-        /// Gets the underlying original Chart object
+        /// Gets the underlying original Chart object.
         /// </summary>
         public Chart WrappedChart { get; private set; }
 
+        /// <summary>
+        /// Determines the maximum number of points which can be drawn on the chart.
+        /// </summary>
         public int MaxRenderedPoints { get; set; }
 
+        /// <summary>
+        /// Enables or disables approximation.
+        /// </summary>
         public bool ApproximationEnabled { get; set; }
+
+        /// <summary>
+        /// Indicates whether the approximated lines should be drawn as dashed lines.
+        /// </summary>
+        public bool UseDashLines { get; set; }
+
+        /// <summary>
+        /// Collection of the SeriesEx as a wrapper for Series.
+        /// </summary>
+        public SeriesCollectionEx Series { get; private set; }
+
+        private int[] detailedRange; // remember detailed range when zooming (to be able to approximate when adding)
 
         public ChartEx(Chart chart){
             this.WrappedChart = chart;
             Series = new SeriesCollectionEx(WrappedChart.Series);
-            Series.PointsWillBeAdded += PointsWillBeAdded;
+            Series.PointsAdded += PointsAdded;
 
             MaxRenderedPoints = 1000;
             ApproximationEnabled = true;
+            UseDashLines = true;
+
+            chart.AxisViewChanged+=AxisViewChanged;
+            chart.MouseDoubleClick +=MouseDoubleClick;
         }
 
-        public SeriesCollectionEx Series { get; private set; }
-
-        private void PointsWillBeAdded(SeriesEx series, List<PointF> storedPoints, List<PointF> pointsToAdd)
+        private void MouseDoubleClick(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-
-            List<PointF> resultPoints = new List<PointF>();
-            //1
-            if (ApproximationEnabled && storedPoints.Count > MaxRenderedPoints)
+            if (!WrappedChart.ChartAreas[0].AxisX.ScaleView.IsZoomed) return;
+            for (int i = 0; i < Series.Count; i++)
             {
-                //3
-                int step = (int)Math.Ceiling((double)storedPoints.Count / MaxRenderedPoints); // calculate step of approximation
-                resultPoints.AddRange(storedPoints.Where((x, i) => i % step == 0));
+                List<PointF> res = ApproximateSeries(Series[i]);
+                Series[i].WrappedSeries.Points.DataBindXY(res, "X", res, "Y");
+            }
+            WrappedChart.ChartAreas[0].AxisX.ScaleView.ZoomReset(0);
+            WrappedChart.ChartAreas[0].AxisY.ScaleView.ZoomReset(0);
+            detailedRange = null; // clear detailed range
+          
+        }
+
+        
+        private void AxisViewChanged(object sender, ViewEventArgs e)
+        {
+            if (!e.Axis.Equals(WrappedChart.ChartAreas[0].AxisX))
+                return; // if we aren't dealing with X axis ignore that.
+            AxisScaleView view = WrappedChart.ChartAreas[0].AxisX.ScaleView;
+            if (view.IsZoomed)
+            {
+                for (int i = 0; i < Series.Count; i++)
+                {
+                    ZoomApproximation(Series[i]);
+                }
             }
             else
-                resultPoints.AddRange(storedPoints);
-            series.WrappedSeries.Points.DataBindXY(resultPoints, "X", resultPoints, "Y");
+            {
+                for (int i = 0; i < Series.Count; i++)
+                {
+                    ApproximateSeries(Series[i]);
+                }
+            }
             
-            /*
-             * Approximation:
-             * 1. Check total number of points (MAX_RENDERED_POINTS)
-             * 2. If less than max => draw them all. Otherwise continue optimization.
-             * 3. Measure drawing area.
-             * 4. Determine necessary number of points.
-             * 5. Approximate points.
-             * 
-             * Zooming:
-             * 1. If number of points less than max Apply approximation to zommed area.
-             * 2. Otherwise find range of displayed points. 
-             * 3. Get that range in original points array.
-             * 4. Insert points to the drawing points collection.
-             */
         }
 
 
-        private int[] GetVisiblePointsRange(Series series)
+        private void PointsAdded(SeriesEx series)
+        {
+            List<PointF> res = ApproximateSeries(series, detailedRange);
+            series.WrappedSeries.Points.DataBindXY(res, "X", res, "Y");
+        }
+        private void ZoomApproximation(SeriesEx s)
+        {
+            if (!ApproximationEnabled) return;
+
+            List<PointF> storedPoints = s.Points.Items;
+            if (storedPoints.Count > MaxRenderedPoints)
+            {
+                int[] actualIndexes = GetVisiblePointsRange(s);
+                if (actualIndexes[0] >= 0 && actualIndexes[1] >= 0)
+                {
+                    int actualPointsCount = actualIndexes[1] - actualIndexes[0];
+                   // List<PointF> resultPoints = (List<PointF>)storedPoints.GetRange(actualIndexes[0], actualPointsCount);
+                    List<PointF> res = ApproximateSeries(s, storedPoints, actualIndexes);
+                    s.WrappedSeries.Points.DataBindXY(res, "X", res, "Y");
+                }
+
+            }
+           
+        }
+
+        private List<PointF> ApproximateSeries(SeriesEx series, int[] detailedRanges = null)
+        {
+            return ApproximateSeries(series, series.Points.Items, detailedRanges);
+        }
+
+        private List<PointF> ApproximateSeries(SeriesEx series, List<PointF> candidatePoints, int[] detailedRange = null)
+        {
+            List<PointF> resultPoints = new List<PointF>();
+            int detailedRangeWidth = ((detailedRange != null && detailedRange.Length == 2) ? detailedRange[1]  - detailedRange[0] : 0);
+            if (ApproximationEnabled && candidatePoints.Count > MaxRenderedPoints)
+            {
+                int step = GetStep(candidatePoints.Count - detailedRangeWidth);
+                if (detailedRangeWidth == 0)
+                {
+                    resultPoints.AddRange(candidatePoints.Where((x, i) => i % step == 0));
+                    if (UseDashLines)
+                        series.WrappedSeries.BorderDashStyle = ChartDashStyle.Dash;
+                }
+                else
+                {
+                    //IEnumerable<PointF> left = candidatePoints.Where((x, i) => i < detailedRanges[0] && i % step == 0);
+                    //IEnumerable<PointF> right = candidatePoints.Where((x, i) => i > detailedRanges[1] && i % step == 0);
+                    this.detailedRange = detailedRange;
+                    resultPoints.Add(candidatePoints.First());
+                    resultPoints.AddRange(ApproximateSeries(series, candidatePoints.GetRange(detailedRange[0], detailedRangeWidth)));
+                    resultPoints.Add(candidatePoints.Last());
+                }
+                
+            }
+            else
+            {
+                resultPoints.AddRange(candidatePoints);
+                if (UseDashLines)
+                    series.WrappedSeries.BorderDashStyle = ChartDashStyle.Solid;
+            }
+            return resultPoints;
+        }
+
+        private int GetStep(int amountOfPoints)
+        {
+            return (int)Math.Ceiling((double)amountOfPoints / MaxRenderedPoints);
+        }
+
+        /// <summary>
+        /// Retrieves absolute range from all points.
+        /// </summary>
+        private int[] GetVisiblePointsRange(SeriesEx series)
         {
             // two shortcuts
             ChartArea area = WrappedChart.ChartAreas[0];
 
             // these are the X-Values of the zoomed portion:
-            double min = area.AxisX.ScaleView.ViewMinimum;
-            double max = area.AxisX.ScaleView.ViewMaximum;
+            double minX = area.AxisX.ScaleView.ViewMinimum;
+            double maxX = area.AxisX.ScaleView.ViewMaximum;
 
-            // these are the respective DataPoints:
-            DataPoint pt0 = series.Points.FirstOrDefault(x => x.XValue >= min);
-            DataPoint pt1 = series.Points.LastOrDefault(x => x.XValue <= max);
-
-            return new[] {series.Points.IndexOf(pt0), series.Points.IndexOf(pt1)};
+            double size = area.AxisX.Maximum - area.AxisX.Minimum;
+            if (size <= minX || size <= maxX)
+                return new int[] { -1, -1 };
+            else
+                return new int[] { (int)((minX / size) * series.Points.Items.Count), (int)((maxX / size) * series.Points.Items.Count) };
         }
 
     }
@@ -106,13 +203,15 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             WrappedCollection = collection;
         }
 
+        public int Count { get { return collection.Count; } }
+
         public SeriesEx Add(String name){
 
             SeriesEx s = collection.FirstOrDefault(x => name.Equals(x.WrappedSeries.Name));
             if (s == null)
             {
                 s = new SeriesEx(WrappedCollection.Add(name));
-                s.PointsWillBeAdded += PointsWillBeAddedHandler;
+                s.PointsAdded += PointsAddedHandler;
                 collection.Add(s);
                 
             }
@@ -126,7 +225,7 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             {
                 collection.Add(series);
                 WrappedCollection.Add(series.WrappedSeries);
-                series.PointsWillBeAdded += PointsWillBeAddedHandler;
+                series.PointsAdded += PointsAddedHandler;
             }
         }
 
@@ -149,15 +248,15 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             collection.Clear();
         }
 
-        public event PointsWillBeAddedEvent PointsWillBeAdded;
-        private void OnPointsWillBeAdded(SeriesEx series, List<PointF> storedPoints, List<PointF> pointsToAdd)
+        public event PointsAddedEvent PointsAdded;
+        private void OnPointsAdded(SeriesEx series)
         {
-            if (PointsWillBeAdded != null)
-                PointsWillBeAdded(series, storedPoints, pointsToAdd);
+            if (PointsAdded != null)
+                PointsAdded(series);
         }
-        private void PointsWillBeAddedHandler(SeriesEx series, List<PointF> storedPoints, List<PointF> pointsToAdd)
+        private void PointsAddedHandler(SeriesEx series)
         {
-            OnPointsWillBeAdded(series, storedPoints, pointsToAdd);
+            OnPointsAdded(series);
         }
     }
 
@@ -183,63 +282,42 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
         {
             this.WrappedSeries = series;
             Points = new DataPointCollectionEx();
-            Points.PointsWillBeAdded += PointsWillBeAddedHandler;
+            Points.PointsAdded += PointsAddedHandler;
         }
         
 
-        public event PointsWillBeAddedEvent PointsWillBeAdded;
-        private void OnPointsWillBeAdded(List<PointF> storedPoints, List<PointF> pointsToAdd)
+        public event PointsAddedEvent PointsAdded;
+        private void OnPointsAdded()
         {
-            if (PointsWillBeAdded != null)
-                PointsWillBeAdded(this, storedPoints, pointsToAdd);
+            if (PointsAdded != null)
+                PointsAdded(this);
             else
                 Console.WriteLine("There is no event handler for the SeriesEx named '" + Name + "'. You may forgot to add SeriesEx to the ChartEx before adding points into it.");
         }
-        private void PointsWillBeAddedHandler(SeriesEx series, List<PointF> storedPoints, List<PointF> pointsToAdd)
+        private void PointsAddedHandler(SeriesEx series)
         {
-            OnPointsWillBeAdded(storedPoints, pointsToAdd);
+            OnPointsAdded();
         }
 
     }
 
     class DataPointCollectionEx
     {
-        private List<PointF> tmpPoints; // collection used to store all points which will be added. (So far there isn't defined public constructor we must use whole Series).
-        private List<PointF> mainPoints; // collection of stored points
+        private List<PointF> points; // collection of stored points
         
         public DataPointCollectionEx()
         {
-            tmpPoints = new List<PointF>();
-            mainPoints = new List<PointF>();
+            points = new List<PointF>();
         }
 
+        public List<PointF> Items { get { return points; } }
         
-        public event PointsWillBeAddedEvent PointsWillBeAdded;
-        private void OnPointsWillBeAdded()
+        public event PointsAddedEvent PointsAdded;
+        private void OnPointsAdded()
         {
-            if (PointsWillBeAdded != null)
-                PointsWillBeAdded(null, mainPoints, tmpPoints);
+            if (PointsAdded != null)
+                PointsAdded(null);
         }
-
-        //void AllowAdd()
-        //{
-        //    AllowAdd(0, tmpPoints.Count);
-        //}
-        //void AllowAdd(int fromIndex, int amount = 0)
-        //{
-        //    if (fromIndex < 0) fromIndex = 0;
-        //    if (amount <= 0)
-        //    {
-        //        if (tmpPoints.Count == 0) return;
-        //        else amount = tmpPoints.Count; 
-        //    }
-
-        //    if (fromIndex == 0 && (amount == tmpPoints.Count || amount == 0))
-        //        mainPoints.AddRange(tmpPoints);
-        //    else
-        //        mainPoints.AddRange(tmpPoints.Skip(fromIndex).Take(amount));
-        //    tmpPoints.Clear();
-        //}
 
         #region Overriden methods to add data
      
@@ -250,23 +328,19 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
 
         public void Add(PointF point)
         {
-            tmpPoints.Clear();
-            tmpPoints.Add(point);
-            mainPoints.Add(point);
-            OnPointsWillBeAdded();
+            points.Add(point);
+            OnPointsAdded();
         }
 
         public void AddRange(IEnumerable<PointF> dataSource)
         {
-            tmpPoints.Clear();
-            tmpPoints.AddRange(dataSource);
-            mainPoints.AddRange(dataSource);
-            OnPointsWillBeAdded();
+            points.AddRange(dataSource);
+            OnPointsAdded();
         }
 
         public void Clear()
         {
-            mainPoints.Clear();
+            points.Clear();
         }
         #endregion
 
