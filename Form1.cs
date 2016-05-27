@@ -16,11 +16,12 @@ namespace AsyncChart
     {
         private static Random rnd = new Random(Environment.TickCount);
         private int pointsAmount = 5000;
-        private int pointsRange = 1000;
+        private int pointsRange = 6000;
         private int seriesAmount = 12;
+        private float delta = 1000;
         private bool[] enabledSeries;
-        private IPointsFunc[] pointsFuncs = new IPointsFunc[] { new PointsFuncDigital(2), new PointsFuncRandom(2), new PointsFuncSin() };
-        public enum Funcs { SIN, DIGITAL, RANDOM, MIXED}
+        private IPointsFunc[] pointsFuncs = new IPointsFunc[] { new PointsFuncDigital(2), new PointsFuncRandom(2), new PointsFuncSin(), new PointsFuncRawData()};
+        public enum Funcs { SIN, DIGITAL, RANDOM, RAW, MIXED}
         private Funcs funcs;
         private long time;
 
@@ -30,7 +31,7 @@ namespace AsyncChart
         {
             InitializeComponent();
             chartEx = new ChartEx(chart1);
-            rbFuncSin.Checked = true;
+            rbRaw.Checked = true;
             CreateEnabledSeries();
             Generate();
             UpdateCheckList();
@@ -39,10 +40,10 @@ namespace AsyncChart
             nudValuesRange.Value = pointsRange;
             nudMaxPoints.Value = chartEx.MaxRenderedPoints;
             nudSeries.Value = seriesAmount;
-
+            nudDelta.Value = (decimal)delta;
             cbApproximate.Checked = chartEx.ApproximationEnabled;
             cbDash.Checked = chartEx.UseDashLines;
-           // timer1.Start();
+         //   timer1.Start();
             bTimer.Text = (timer1.Enabled ? "Stop" : "Start");
             bTimer.BackColor = (timer1.Enabled ? Color.IndianRed : Color.LimeGreen);
         }
@@ -60,6 +61,8 @@ namespace AsyncChart
                     return pointsFuncs[1];
                 case Funcs.MIXED:
                     return pointsFuncs[i%3];
+                case Funcs.RAW:
+                    return pointsFuncs[3];
                 
             }
         }
@@ -146,6 +149,7 @@ namespace AsyncChart
                     case "rbFuncDigital": funcs = Funcs.DIGITAL; break;
                     case "rbFuncRandom": funcs = Funcs.RANDOM; break;
                     case "rbRandomFunc": funcs = Funcs.MIXED; break;
+                    case "rbRaw": funcs = Funcs.RAW; break;
                 }
             }
         }
@@ -153,6 +157,8 @@ namespace AsyncChart
         private void nudValuesRange_ValueChanged(object sender, EventArgs e)
         {
             pointsRange = (int)nudValuesRange.Value;
+            chartEx.WrappedChart.ChartAreas[0].AxisX.Minimum = 0;
+            chartEx.WrappedChart.ChartAreas[0].AxisX.Maximum = pointsRange;
             Generate();
         }
 
@@ -195,6 +201,12 @@ namespace AsyncChart
             CreateEnabledSeries();
             Generate();
             UpdateCheckList();
+        }
+
+        private void nudDelta_ValueChanged(object sender, EventArgs e)
+        {
+            delta = (float)nudDelta.Value;
+            chartEx.SelectionMethod = new ChartExDeltaPeekSelector(delta);
         }
 
         

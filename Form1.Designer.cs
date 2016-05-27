@@ -30,11 +30,15 @@ namespace AsyncChart
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea4 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend4 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.panel1 = new System.Windows.Forms.Panel();
+            this.gbSeries = new System.Windows.Forms.GroupBox();
+            this.label4 = new System.Windows.Forms.Label();
+            this.nudSeries = new System.Windows.Forms.NumericUpDown();
+            this.clbSeries = new System.Windows.Forms.CheckedListBox();
             this.gbTimer = new System.Windows.Forms.GroupBox();
             this.bTimer = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
@@ -45,32 +49,32 @@ namespace AsyncChart
             this.label5 = new System.Windows.Forms.Label();
             this.nudMaxPoints = new System.Windows.Forms.NumericUpDown();
             this.gbPoints = new System.Windows.Forms.GroupBox();
+            this.label6 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
+            this.nudDelta = new System.Windows.Forms.NumericUpDown();
             this.nudValuesRange = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
             this.nudPoints = new System.Windows.Forms.NumericUpDown();
             this.gbFuncs = new System.Windows.Forms.GroupBox();
+            this.rbRaw = new System.Windows.Forms.RadioButton();
             this.rbRandomFunc = new System.Windows.Forms.RadioButton();
             this.rbFuncRandom = new System.Windows.Forms.RadioButton();
             this.rbFuncDigital = new System.Windows.Forms.RadioButton();
             this.rbFuncSin = new System.Windows.Forms.RadioButton();
             this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.gbSeries = new System.Windows.Forms.GroupBox();
-            this.clbSeries = new System.Windows.Forms.CheckedListBox();
-            this.label4 = new System.Windows.Forms.Label();
-            this.nudSeries = new System.Windows.Forms.NumericUpDown();
             this.panel1.SuspendLayout();
+            this.gbSeries.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudSeries)).BeginInit();
             this.gbTimer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudInterval)).BeginInit();
             this.gbApproximation.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudMaxPoints)).BeginInit();
             this.gbPoints.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudDelta)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudValuesRange)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudPoints)).BeginInit();
             this.gbFuncs.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
-            this.gbSeries.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudSeries)).BeginInit();
             this.SuspendLayout();
             // 
             // timer1
@@ -89,6 +93,60 @@ namespace AsyncChart
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(254, 748);
             this.panel1.TabIndex = 1;
+            // 
+            // gbSeries
+            // 
+            this.gbSeries.Controls.Add(this.label4);
+            this.gbSeries.Controls.Add(this.nudSeries);
+            this.gbSeries.Controls.Add(this.clbSeries);
+            this.gbSeries.Location = new System.Drawing.Point(12, 465);
+            this.gbSeries.Name = "gbSeries";
+            this.gbSeries.Size = new System.Drawing.Size(231, 271);
+            this.gbSeries.TabIndex = 8;
+            this.gbSeries.TabStop = false;
+            this.gbSeries.Text = "Series";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(14, 26);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(90, 13);
+            this.label4.TabIndex = 3;
+            this.label4.Text = "Amount of Series:";
+            // 
+            // nudSeries
+            // 
+            this.nudSeries.Location = new System.Drawing.Point(142, 24);
+            this.nudSeries.Maximum = new decimal(new int[] {
+            20,
+            0,
+            0,
+            0});
+            this.nudSeries.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudSeries.Name = "nudSeries";
+            this.nudSeries.Size = new System.Drawing.Size(83, 20);
+            this.nudSeries.TabIndex = 2;
+            this.nudSeries.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudSeries.ValueChanged += new System.EventHandler(this.nudSeries_ValueChanged);
+            // 
+            // clbSeries
+            // 
+            this.clbSeries.CheckOnClick = true;
+            this.clbSeries.FormattingEnabled = true;
+            this.clbSeries.Location = new System.Drawing.Point(7, 66);
+            this.clbSeries.Name = "clbSeries";
+            this.clbSeries.Size = new System.Drawing.Size(218, 199);
+            this.clbSeries.TabIndex = 0;
+            this.clbSeries.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbSeries_ItemCheck);
             // 
             // gbTimer
             // 
@@ -215,16 +273,27 @@ namespace AsyncChart
             // 
             // gbPoints
             // 
+            this.gbPoints.Controls.Add(this.label6);
             this.gbPoints.Controls.Add(this.label3);
+            this.gbPoints.Controls.Add(this.nudDelta);
             this.gbPoints.Controls.Add(this.nudValuesRange);
             this.gbPoints.Controls.Add(this.label1);
             this.gbPoints.Controls.Add(this.nudPoints);
             this.gbPoints.Location = new System.Drawing.Point(12, 12);
             this.gbPoints.Name = "gbPoints";
-            this.gbPoints.Size = new System.Drawing.Size(231, 100);
+            this.gbPoints.Size = new System.Drawing.Size(231, 105);
             this.gbPoints.TabIndex = 5;
             this.gbPoints.TabStop = false;
             this.gbPoints.Text = "Points Properties";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(14, 76);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(32, 13);
+            this.label6.TabIndex = 4;
+            this.label6.Text = "Delta";
             // 
             // label3
             // 
@@ -234,6 +303,25 @@ namespace AsyncChart
             this.label3.Size = new System.Drawing.Size(77, 13);
             this.label3.TabIndex = 1;
             this.label3.Text = "Values Range:";
+            // 
+            // nudDelta
+            // 
+            this.nudDelta.DecimalPlaces = 2;
+            this.nudDelta.Increment = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.nudDelta.Location = new System.Drawing.Point(142, 74);
+            this.nudDelta.Maximum = new decimal(new int[] {
+            100000,
+            0,
+            0,
+            0});
+            this.nudDelta.Name = "nudDelta";
+            this.nudDelta.Size = new System.Drawing.Size(83, 20);
+            this.nudDelta.TabIndex = 3;
+            this.nudDelta.ValueChanged += new System.EventHandler(this.nudDelta_ValueChanged);
             // 
             // nudValuesRange
             // 
@@ -282,6 +370,7 @@ namespace AsyncChart
             // 
             // gbFuncs
             // 
+            this.gbFuncs.Controls.Add(this.rbRaw);
             this.gbFuncs.Controls.Add(this.rbRandomFunc);
             this.gbFuncs.Controls.Add(this.rbFuncRandom);
             this.gbFuncs.Controls.Add(this.rbFuncDigital);
@@ -292,6 +381,18 @@ namespace AsyncChart
             this.gbFuncs.TabIndex = 4;
             this.gbFuncs.TabStop = false;
             this.gbFuncs.Text = "Functions";
+            // 
+            // rbRaw
+            // 
+            this.rbRaw.AutoSize = true;
+            this.rbRaw.Location = new System.Drawing.Point(110, 20);
+            this.rbRaw.Name = "rbRaw";
+            this.rbRaw.Size = new System.Drawing.Size(71, 17);
+            this.rbRaw.TabIndex = 4;
+            this.rbRaw.TabStop = true;
+            this.rbRaw.Text = "Raw data";
+            this.rbRaw.UseVisualStyleBackColor = true;
+            this.rbRaw.CheckedChanged += new System.EventHandler(this.rbFunc_CheckedChanged);
             // 
             // rbRandomFunc
             // 
@@ -347,88 +448,34 @@ namespace AsyncChart
             // 
             // chart1
             // 
-            chartArea4.CursorX.IsUserEnabled = true;
-            chartArea4.CursorX.IsUserSelectionEnabled = true;
-            chartArea4.CursorX.LineColor = System.Drawing.Color.Transparent;
-            chartArea4.CursorX.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
-            chartArea4.CursorX.LineWidth = 0;
-            chartArea4.CursorX.SelectionColor = System.Drawing.Color.SkyBlue;
-            chartArea4.CursorY.IsUserEnabled = true;
-            chartArea4.CursorY.IsUserSelectionEnabled = true;
-            chartArea4.CursorY.LineColor = System.Drawing.Color.Transparent;
-            chartArea4.CursorY.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
-            chartArea4.CursorY.LineWidth = 0;
-            chartArea4.CursorY.SelectionColor = System.Drawing.Color.SkyBlue;
-            chartArea4.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea4);
-            legend4.Name = "Legend1";
-            this.chart1.Legends.Add(legend4);
+            chartArea1.CursorX.IsUserEnabled = true;
+            chartArea1.CursorX.IsUserSelectionEnabled = true;
+            chartArea1.CursorX.LineColor = System.Drawing.Color.Transparent;
+            chartArea1.CursorX.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
+            chartArea1.CursorX.LineWidth = 0;
+            chartArea1.CursorX.SelectionColor = System.Drawing.Color.SkyBlue;
+            chartArea1.CursorY.IsUserEnabled = true;
+            chartArea1.CursorY.IsUserSelectionEnabled = true;
+            chartArea1.CursorY.LineColor = System.Drawing.Color.Transparent;
+            chartArea1.CursorY.LineDashStyle = System.Windows.Forms.DataVisualization.Charting.ChartDashStyle.NotSet;
+            chartArea1.CursorY.LineWidth = 0;
+            chartArea1.CursorY.SelectionColor = System.Drawing.Color.SkyBlue;
+            chartArea1.Name = "ChartArea1";
+            this.chart1.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            this.chart1.Legends.Add(legend1);
             this.chart1.Location = new System.Drawing.Point(253, 0);
             this.chart1.Name = "chart1";
             this.chart1.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.None;
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series4.Legend = "Legend1";
-            series4.Name = "Series1";
-            series4.YValuesPerPoint = 2;
-            this.chart1.Series.Add(series4);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Legend = "Legend1";
+            series1.Name = "Series1";
+            series1.YValuesPerPoint = 2;
+            this.chart1.Series.Add(series1);
             this.chart1.Size = new System.Drawing.Size(672, 748);
             this.chart1.TabIndex = 2;
             this.chart1.Text = "chart";
-            // 
-            // gbSeries
-            // 
-            this.gbSeries.Controls.Add(this.label4);
-            this.gbSeries.Controls.Add(this.nudSeries);
-            this.gbSeries.Controls.Add(this.clbSeries);
-            this.gbSeries.Location = new System.Drawing.Point(12, 465);
-            this.gbSeries.Name = "gbSeries";
-            this.gbSeries.Size = new System.Drawing.Size(231, 271);
-            this.gbSeries.TabIndex = 8;
-            this.gbSeries.TabStop = false;
-            this.gbSeries.Text = "Series";
-            // 
-            // clbSeries
-            // 
-            this.clbSeries.CheckOnClick = true;
-            this.clbSeries.FormattingEnabled = true;
-            this.clbSeries.Location = new System.Drawing.Point(7, 66);
-            this.clbSeries.Name = "clbSeries";
-            this.clbSeries.Size = new System.Drawing.Size(218, 199);
-            this.clbSeries.TabIndex = 0;
-            this.clbSeries.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbSeries_ItemCheck);
-            // 
-            // label4
-            // 
-            this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(14, 26);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(90, 13);
-            this.label4.TabIndex = 3;
-            this.label4.Text = "Amount of Series:";
-            // 
-            // nudSeries
-            // 
-            this.nudSeries.Location = new System.Drawing.Point(142, 24);
-            this.nudSeries.Maximum = new decimal(new int[] {
-            20,
-            0,
-            0,
-            0});
-            this.nudSeries.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nudSeries.Name = "nudSeries";
-            this.nudSeries.Size = new System.Drawing.Size(83, 20);
-            this.nudSeries.TabIndex = 2;
-            this.nudSeries.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nudSeries.ValueChanged += new System.EventHandler(this.nudSeries_ValueChanged);
             // 
             // Form1
             // 
@@ -439,9 +486,12 @@ namespace AsyncChart
             this.Controls.Add(this.panel1);
             this.MinimumSize = new System.Drawing.Size(830, 640);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "ChartEx Demo";
             this.SizeChanged += new System.EventHandler(this.Form1_SizeChanged);
             this.panel1.ResumeLayout(false);
+            this.gbSeries.ResumeLayout(false);
+            this.gbSeries.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudSeries)).EndInit();
             this.gbTimer.ResumeLayout(false);
             this.gbTimer.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudInterval)).EndInit();
@@ -450,14 +500,12 @@ namespace AsyncChart
             ((System.ComponentModel.ISupportInitialize)(this.nudMaxPoints)).EndInit();
             this.gbPoints.ResumeLayout(false);
             this.gbPoints.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudDelta)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudValuesRange)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudPoints)).EndInit();
             this.gbFuncs.ResumeLayout(false);
             this.gbFuncs.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
-            this.gbSeries.ResumeLayout(false);
-            this.gbSeries.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.nudSeries)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -490,6 +538,9 @@ namespace AsyncChart
         private System.Windows.Forms.CheckedListBox clbSeries;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.NumericUpDown nudSeries;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.NumericUpDown nudDelta;
+        private System.Windows.Forms.RadioButton rbRaw;
 
     }
 }
