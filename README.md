@@ -65,8 +65,6 @@ Example:
 
 ## Add series and points
 
-> In order to properly add points to `ChartEx you` must add series to `ChartEx` BEFORE populating it with points.
-
 * You can create `SeriesEx` as you usually do with regular `Series`
 ```csharp
   SeriesEx seriesEx = new SeriesEx("Name"); // SeriesEx wraps regular Series.
@@ -80,7 +78,7 @@ Example:
 ```csharp
   chartEx.Series.Add(seriesEx);
 ```
-> Points added through `Add` method of the regular series will not be observable and therefore ChartEx won't refresh approximation.
+> Points added through `Add` method of the regular series will not be observable and therefore `ChartEx` won't refresh approximation.
 
 ## Customize `Chart` and `Series`
 Since `ChartEx` and `SeriesEx` were designed as wrappers you are able to access their wrapped objects by `WrappedChart` and `WrappedSeries` respectivelyю

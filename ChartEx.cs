@@ -18,9 +18,6 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
     /// Note: This could be done easier if Microsoft would allow overriding of their methods.
     /// </summary>
 
-
-    ///WARNING: You must Add series BEFORE Adding points into that series. Otherwise Points can't be observed by ChartEx.
-
     delegate void PointsAddedEvent(SeriesEx series);
 
     class ChartEx
@@ -317,6 +314,7 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
                 collection.Add(series);
                 WrappedCollection.Add(series.WrappedSeries);
                 series.PointsAdded += PointsAddedHandler;
+                OnPointsAdded(series); // force update
             }
         }
 
