@@ -15,7 +15,7 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
     
     /// <summary>
     /// ChartEx and underlying classes designed as wrappers to the original chart in order to be able to preview points which will be added.
-    /// Note: This could be done easier if Microsoft allows overriding of their methods.
+    /// Note: This could be done easier if Microsoft would allow overriding of their methods.
     /// </summary>
 
 
@@ -54,7 +54,7 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
         /// <summary>
         /// Gets default selection method. See <see cref="ChartEx.SelectionMethod"/>.
         /// </summary>
-        public IChartExSelector DefaultSelectionMethod { get { return new ChartExPeekSelector(); } }
+        public static IChartExSelector DefaultSelectionMethod { get { return new ChartExPeekSelector(); } }
 
         /// <summary>
         /// Enables or Disables Right Click Pan.
@@ -233,14 +233,9 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             {
                 if (detailedRangeWidth == 0)
                 {
-                    Stopwatch watch = Stopwatch.StartNew();
                     resultPoints = SelectionMethod.Select(candidatePoints, MaxRenderedPoints);
                     if (resultPoints.Count > MaxRenderedPoints) // ensure the Selector gives us allowed number of points.
-                        resultPoints = new ChartExSimpleSelector().Select(resultPoints, MaxRenderedPoints);
-         
-                    watch.Stop();
-                    Console.WriteLine("Elapsed time for series '" + series.Name + "' : " + watch.ElapsedTicks);
-                    
+                        resultPoints = resultPoints.Take(MaxRenderedPoints).ToList();
                     if (UseDashLines)
                         series.WrappedSeries.BorderDashStyle = ChartDashStyle.Dash;
                 }
@@ -446,15 +441,21 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
 
     #region Selector Interfaces and some Selectors.
     /// <summary>
-    /// Interface provides a selection method of points.
+    /// IChartExSelector interface provides method for selection algorithm.
     /// </summary>
     interface IChartExSelector 
     {
+        /// <summary>
+        /// Selects points from candidate points.
+        /// </summary>
+        /// <param name="candidatePoints">List of all points in the approximation range. </param>
+        /// <param name="maxPoints">Max capacity of the approximated points list. </param>
+        /// <returns></returns>
         List<PointF> Select(List<PointF> candidatePoints, int maxPoints);
     }
 
     /// <summary>
-    /// Simple Selector which will select every Nth points based on total number of points and range.
+    /// Simple Selector which will evenly select points based on total number of points and approximating range.
     /// </summary>
     class ChartExSimpleSelector : IChartExSelector
     {
@@ -474,6 +475,9 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
         }
     }
 
+    /// <summary>
+    /// Selector which will select stationary points.
+    /// </summary>
     class ChartExPeekSelector : IChartExSelector
     {
 
@@ -491,29 +495,9 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             return resultPoints;
         }
     }
-
-    class ChartExSavitzkyGolaySelector : IChartExSelector
-    {
-        public List<PointF> Select(List<PointF> candidatePoints, int maxPoints)
-        {
-            List<PointF> resultPoints = new List<PointF>();
-            for (int i = 4; i < candidatePoints.Count - 4; i+=9)
-            {
-                resultPoints.Add(new PointF(candidatePoints[i].X,
-                                              (-21.0f * candidatePoints[i - 4].Y + 
-                                                14.0f * candidatePoints[i - 3].Y + 
-                                                39.0f * candidatePoints[i - 2].Y + 
-                                                54.0f * candidatePoints[i - 1].Y + 
-                                                59.0f * candidatePoints[i].Y + 
-                                                54.0f * candidatePoints[i + 1].Y + 
-                                                39.0f * candidatePoints[i + 2].Y + 
-                                                14.0f * candidatePoints[i + 3].Y +
-                                               -21.0f * candidatePoints[i + 4].Y) * 0.004329004329004329004329004329f)); // /231
-            }
-            return resultPoints;
-        }
-    }
-
+    /// <summary>
+    /// Selector which will select stationary points which have delta between two consecutive points greater than specified threshold value.
+    /// </summary>
     class ChartExDeltaPeekSelector : IChartExSelector
     {
         private ChartExPeekSelector peekSelector;
@@ -544,45 +528,31 @@ namespace GLAR.Windows.Forms.DataVisualization.Charting.ChartEx
             return resultPoints;
         }
     }
-
-    class ChartExAutoDeltaPeekSelector : ChartExDeltaPeekSelector
+    /// <summary>
+    /// Selector which will select points using Savitzky–Golay filter.
+    /// </summary>
+    class ChartExSavitzkyGolaySelector : IChartExSelector
     {
-        private ChartExPeekSelector peekSelector;
-
-        public ChartExAutoDeltaPeekSelector()
-            : base(0)
-        {
-            peekSelector = new ChartExPeekSelector();
-        }
-
         public List<PointF> Select(List<PointF> candidatePoints, int maxPoints)
         {
             List<PointF> resultPoints = new List<PointF>();
-
-            resultPoints = peekSelector.Select(candidatePoints, maxPoints);
-
-            float averageDelta = calculateAverageDelta(resultPoints);
-
-            int i = 0;
-            while (i < resultPoints.Count - 1)
+            for (int i = 4; i < candidatePoints.Count - 4; i+=9)
             {
-                if (Math.Abs(resultPoints[i].Y - resultPoints[i + 1].Y) <= averageDelta)
-                    resultPoints.RemoveAt(i);
-                else
-                    ++i;
+                resultPoints.Add(new PointF(candidatePoints[i].X,
+                                              (-21.0f * candidatePoints[i - 4].Y + 
+                                                14.0f * candidatePoints[i - 3].Y + 
+                                                39.0f * candidatePoints[i - 2].Y + 
+                                                54.0f * candidatePoints[i - 1].Y + 
+                                                59.0f * candidatePoints[i].Y + 
+                                                54.0f * candidatePoints[i + 1].Y + 
+                                                39.0f * candidatePoints[i + 2].Y + 
+                                                14.0f * candidatePoints[i + 3].Y +
+                                               -21.0f * candidatePoints[i + 4].Y) * 0.004329004329004329004329004329f)); // /231
             }
-
             return resultPoints;
         }
-
-        private float calculateAverageDelta(List<PointF> peeks)
-        {
-            float delta = 0;
-
-
-            return delta;
-
-        }
     }
+
+   
     #endregion
 }

@@ -179,7 +179,6 @@ namespace AsyncChart
 
         private void bTimer_Click(object sender, EventArgs e)
         {
-            
             if (timer1.Enabled)
                 timer1.Stop();
             else
